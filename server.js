@@ -1,7 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const tf = require('@tensorflow/tfjs');
+const tfnode = require('@tensorflow/tfjs-node');
 const cocoSsd = require('@tensorflow-models/coco-ssd');
 
 // Init Tensorflow.js Obj Det model
@@ -35,7 +35,7 @@ app.post('/upload', (req, res) => {
     console.log(`Image saved: ${fileName}`);
 
     // Object detection with Tensorflow.js
-    tf.node.decodeImage(fs.readFileSync(filePath)).then((imageTensor) => {
+    tfnode.decodeImage(fs.readFileSync(filePath)).then((imageTensor) => {
         return model.detect(imageTensor);
     }).then((predictions) => {
         console.log('Object detection results:', predictions);
