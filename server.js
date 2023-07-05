@@ -6,6 +6,9 @@ const cocoSsd = require('@tensorflow-models/coco-ssd');
 
 const analytics = require('./analytics')
 
+// HARDCODE uid
+const uid = "RJ0pPZEpmqPdiwMNBsuErIKU8zI3";
+
 // Init Tensorflow.js Obj Det model
 let model;
 
@@ -15,6 +18,20 @@ cocoSsd.load().then((loadedModel) => {
 }).catch((err) => {
   console.error('Error loading Coco SSD model:', err);
 });
+
+const uploadInterval = 10;
+
+// Init firebase
+const admin = require('firebase-admin');
+const serviceAccount = require('./brightpaw-d6fd6-firebase-adminsdk-qqfyk-487caca621.json'); // Replace with the path to your service account key file
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
+const db = admin.firestore();
+
+const activityRef = db.collection('users').doc(uid).collection('activity');
 
 // Init Server
 const app = express();
@@ -26,9 +43,13 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 past_pred = [];
-var dogroll = new analytics.RollingAverage(60);
-var catroll = new analytics.RollingAverage(60);
-var personroll = new analytics.RollingAverage(60);
+var dogroll = new analytics.RollingAverage(uploadInterval);
+var catroll = new analytics.RollingAverage(uploadInterval);
+var personroll = new analytics.RollingAverage(uploadInterval);
+var predictionsMade = 0;
+
+// Currently ffmpeg streams 2 frames per second
+// this script uploads to firebase every uploadInterval predicitions
 
 app.post('/upload', (req, res) => {
   // console.time("timer read, predict, and delete file")
@@ -92,7 +113,33 @@ app.post('/upload', (req, res) => {
           console.log("Rolling avg. of person activity:", personroll.getAverage());
 
         }
+
         past_pred = pred_center;
+
+        predictionsMade++; 
+
+        if (predictionsMade >= uploadInterval) {
+
+          console.log("About to update firebase...")
+
+          // upload to firebase
+          const activityData = {
+            dog: dogroll.getAverage(),
+            cat: catroll.getAverage(),
+            person: personroll.getAverage(),
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+          };
+
+          activityRef.add(activityData)
+            .then((docRef) => {
+              console.log('Activity data uploaded successfully:', docRef.id);
+            })
+            .catch((error) => {
+              console.error('Error uploading activity data:', error);
+          });
+
+          predictionsMade = 0;
+        }
 
       }
 
