@@ -1,1 +1,1 @@
-"# jsDogDetect_server" 
+# jsDogDetect_server
