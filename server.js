@@ -23,7 +23,7 @@ const uploadInterval = 10;
 
 // Init firebase
 const admin = require('firebase-admin');
-const serviceAccount = require('./brightpaw-d6fd6-firebase-adminsdk-qqfyk-487caca621.json'); // Replace with the path to your service account key file
+const serviceAccount = require('./firebase_servicekey.json'); // Replace with the path to your service account key file
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
